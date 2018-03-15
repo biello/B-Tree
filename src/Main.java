@@ -7,13 +7,15 @@ public class Main {
 
     public static void main(String[] args) {
 
-        BTreeNode b = new BTreeNode(new int[]{18}, getEmptyNodes(2));
-        BTreeNode c = new BTreeNode(new int[]{43,78}, getEmptyNodes(3));
-        List rootNodes = new LinkedList<BTreeNode>();
-        rootNodes.add(b);
-        rootNodes.add(c);
-        BTreeNode root = new BTreeNode(new int[]{35}, rootNodes);
-        System.out.println(root.search(78).getValues());
+        BTreeNode node = new BTreeNode(3);
+        node.insert(35);
+        node.insert(17);
+        node.insert(18);
+
+        while(node.parent != null) {
+            node = node.parent;
+        }
+        System.out.println(node.values);
     }
 
     public static List<BTreeNode> getEmptyNodes(int num) {
