@@ -8,7 +8,7 @@ import java.util.List;
  * Date:    2018/3/13 23:12
  * Desc:    M阶B-Tree的节点
  */
-public class  BTreeNode {
+public class BTreeNode {
     /**
      * B树的阶
      */
@@ -40,7 +40,7 @@ public class  BTreeNode {
     /**
      * 构造一棵空的m阶B-树
      *
-     * @param m B-数的阶
+     * @param m B-树的阶
      */
     public BTreeNode(int m) {
         this();
@@ -51,7 +51,7 @@ public class  BTreeNode {
     }
 
     /**
-     * 根据父节点构造一个孩子节点
+     * 根据父节点构造一个空的孩子节点
      *
      * @param parent 父节点
      */
@@ -63,7 +63,7 @@ public class  BTreeNode {
     /**
      * 往B-树里插数据，先找到根节点，从根节点往下找插入的位置，由于
      * B-树不允许有重复的数据，如果插入已有的值则抛出异常插入.
-     * 插入可能会产生新的根节点，会导致当前节点不再是根节点
+     * 插入可能会产生新的根节点，会导致当前节点不再是根节点，返回新的根节点
      *
      * @param e 要插入的元素
      * @return 插入完成后的根节点
@@ -79,7 +79,7 @@ public class  BTreeNode {
         if(!p.isEmpty()) {
             throw new RuntimeException("cannot insert duplicate key to B-Tree, key: " + e);
         }
-        insertNode(p.parent, e, new BTreeNode());
+        insertNode(p.parent, e, new BTreeNode(p.M));
         return getRoot();
     }
 
@@ -125,6 +125,126 @@ public class  BTreeNode {
             }
             // 父节点增加关键字，递归调用
             insertNode(node.parent, up, rNode);
+        }
+    }
+
+    /**
+     * 从B-树里删除关键字，先找到根节点，从根节点往下找要删除的关键字，如果
+     * 关键字不存在，抛出删除异常；如果存在，若关键字不是最下层非终端节点（叶子节点的
+     * 上一层），此时只需要关键字和关键字节点紧邻的右子树中的最小值N互换，然后删除N，
+     * 至此已转化为待删除关键字在最下层非终端节点的情况，所以只需讨论关键字在最下层
+     * 非终端节点的情况。此时分为三种情况：
+     * 1. 被删除关键字所在的节点关键字数大于等于 ceil(M/2)
+     * 2. 被删除关键字所在的节点关键字数等于 ceil(M/2)-1，且该节点相邻右兄弟（或左兄弟）
+     * 中的关键字数大于 ceil(M/2)-1，只需将该兄弟节点中的最小（或最大）关键字上移到
+     * 双亲节点中，而将双亲节点中小于（或大于）该上移动关键字的紧邻关键字下移到被删
+     * 关键字所在的节点中。
+     * 3. 被删除关键字所在的节点关键字数等于 ceil(M/2)-1，且左右兄弟节点的关键字数都等于
+     * ceil(M/2)-1，假设该节点有右兄弟A，则在删除关键字之后，它所在的节点中剩余的关键字和
+     * 孩子引用，加上双亲节点中的指向A的左侧关键字一起，合并到A中去（若没有右兄弟则合并到
+     * 左兄弟中）。此时双亲节点的关键字数减少了一个，若因此导致其关键字数小于ceil(M/2)-1，
+     * 则对双亲节点做递归处理。
+     *
+     * 删除可能会产生新的根节点，会导致当前节点不再是根节点
+     *
+     * @param e 要删除的元素
+     * @return 删除完成后的根节点
+     */
+    public BTreeNode delete(int e) {
+        if(isEmpty()) {
+            return this;
+        }
+        BTreeNode p = getRoot().search(e);
+        if(p.isEmpty()) {
+            throw new RuntimeException("the key to be deleted is not exist, key: " + e);
+        }
+        int valueIndex = 0;
+        while(valueIndex < p.values.size() && p.values.get(valueIndex) < e) {
+            valueIndex++;
+        }
+        // 如果p不是最下层非终端节点
+        if(!p.children.get(0).isEmpty()) {
+            BTreeNode rMin = p.children.get(valueIndex);
+            while(!rMin.children.get(0).isEmpty()) {
+                rMin = rMin.children.get(0);
+            }
+            p.values.set(valueIndex, rMin.values.get(0));
+            return delete(rMin, valueIndex, 0);
+        }
+        return delete(p, valueIndex, 0);
+    }
+
+
+    private BTreeNode delete(BTreeNode target, int valueIndex, int childIndex) {
+        target.values.remove(valueIndex);
+        target.children.remove(childIndex);
+        if(target.children.size() >= Math.ceil(M/2.0)) {
+            return target.getRoot();
+        }
+        if(target.isRoot()) {
+            if(target.children.size() > 1) {
+                return target;
+            }else {
+                BTreeNode newRoot = target.children.get(0);
+                newRoot.parent = null;
+                return newRoot;
+            }
+        }
+        int parentChildIndex = 0;
+        while(parentChildIndex < target.parent.children.size() && target.parent.children.get(parentChildIndex) != target) {
+            parentChildIndex++;
+        }
+        if(parentChildIndex > 0 && target.parent.children.get(parentChildIndex-1).values.size() >= Math.ceil(M/2.0)) {
+            // 左兄弟关键字数大于 ceil(M/2)-1
+            int downKey = target.parent.values.get(parentChildIndex-1);
+            BTreeNode leftSibling = target.parent.children.get(parentChildIndex-1);
+            int upKey = leftSibling.values.remove(leftSibling.values.size()-1);
+            leftSibling.children.remove(leftSibling.children.size()-1);
+            target.values.remove(valueIndex);
+            target.values.add(0, downKey);
+            target.parent.values.set(parentChildIndex-1, upKey);
+            return target.getRoot();
+        }else if(parentChildIndex < target.parent.children.size()-1 &&
+                target.parent.children.get(parentChildIndex+1).values.size() >= Math.ceil(M/2.0)) {
+            // 右兄弟关键字数大于 ceil(M/2)-1
+            int downKey = target.parent.values.get(parentChildIndex);
+            BTreeNode rightSibling = target.parent.children.get(parentChildIndex+1);
+            int upKey = rightSibling.values.remove(0);
+            rightSibling.children.remove(0);
+            target.values.remove(valueIndex);
+            target.values.add(downKey);
+            target.parent.values.set(parentChildIndex, upKey);
+            return target.getRoot();
+        }else {
+            // 左右兄弟关键字数都不大于 ceil(M/2)-1
+            if(parentChildIndex > 0) {
+                // 如果有左兄弟
+                BTreeNode leftSibling = target.parent.children.get(parentChildIndex-1);
+                int downKey = target.parent.values.get(parentChildIndex-1);
+                // 删除目标关键字和关键字紧邻孩子的一个空孩子
+//                target.values.remove(valueIndex);
+//                if(target.children.get(valueIndex).isEmpty()) {
+//                    target.children.remove(valueIndex);
+//                }else {
+//                    target.children.remove(valueIndex+1);
+//                }
+                // 加上父节点关键字
+                leftSibling.values.add(downKey);
+                // 加上目标节点的剩余信息
+                leftSibling.values.addAll(target.values);
+                target.children.forEach(c -> c.parent=leftSibling);
+                leftSibling.children.addAll(target.children);
+//                target.parent.children.remove(parentChildIndex);
+                // 如果删除后父节点的关键字数不小于  ceil(M/2)-1
+//                if(target.parent.children.size() >= Math.ceil(M/2.0)) {
+//                    return leftSibling.getRoot();
+//                }else {
+                    return delete(target.parent, parentChildIndex-1, parentChildIndex);
+//                }
+            }else {
+                // TODO: 右兄弟
+                return null;
+            }
         }
     }
 
@@ -186,7 +306,6 @@ public class  BTreeNode {
      * 清空当前节点
      */
     public void clear() {
-        parent = null;
         values.clear();
         children.clear();
     }
@@ -212,7 +331,8 @@ public class  BTreeNode {
         if(depth > 0) {
             sb.append("|----");
         }
-        System.out.println(sb.toString() + node.values);
+        sb.append(node.values);
+        System.out.println(sb.toString());
         for(BTreeNode child : node.children) {
             printNode(child, depth+1);
         }
