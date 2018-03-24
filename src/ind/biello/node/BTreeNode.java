@@ -174,7 +174,13 @@ public class BTreeNode {
         return delete(p, valueIndex, 0);
     }
 
-
+    /**
+     * 删除指定节点中的关键字和孩子，并处理删除后打破B-树规则的情况
+     * @param target 目标节点
+     * @param valueIndex 关键字索引
+     * @param childIndex 孩子索引
+     * @return 删除完成后的根节点
+     */
     private BTreeNode delete(BTreeNode target, int valueIndex, int childIndex) {
         target.values.remove(valueIndex);
         target.children.remove(childIndex);
