@@ -206,7 +206,6 @@ public class BTreeNode {
             BTreeNode leftSibling = target.parent.children.get(parentChildIndex-1);
             int upKey = leftSibling.values.remove(leftSibling.values.size()-1);
             leftSibling.children.remove(leftSibling.children.size()-1);
-            target.values.remove(valueIndex);
             target.values.add(0, downKey);
             target.parent.values.set(parentChildIndex-1, upKey);
             return target.getRoot();
@@ -217,40 +216,37 @@ public class BTreeNode {
             BTreeNode rightSibling = target.parent.children.get(parentChildIndex+1);
             int upKey = rightSibling.values.remove(0);
             rightSibling.children.remove(0);
-            target.values.remove(valueIndex);
             target.values.add(downKey);
             target.parent.values.set(parentChildIndex, upKey);
             return target.getRoot();
         }else {
             // 左右兄弟关键字数都不大于 ceil(M/2)-1
+            int parentValueIndex;
             if(parentChildIndex > 0) {
-                // 如果有左兄弟
+                // 如果有左兄弟，和左兄弟合并
                 BTreeNode leftSibling = target.parent.children.get(parentChildIndex-1);
-                int downKey = target.parent.values.get(parentChildIndex-1);
-                // 删除目标关键字和关键字紧邻孩子的一个空孩子
-//                target.values.remove(valueIndex);
-//                if(target.children.get(valueIndex).isEmpty()) {
-//                    target.children.remove(valueIndex);
-//                }else {
-//                    target.children.remove(valueIndex+1);
-//                }
                 // 加上父节点关键字
+                parentValueIndex = parentChildIndex - 1;
+                int downKey = target.parent.values.get(parentValueIndex);
                 leftSibling.values.add(downKey);
                 // 加上目标节点的剩余信息
                 leftSibling.values.addAll(target.values);
                 target.children.forEach(c -> c.parent=leftSibling);
                 leftSibling.children.addAll(target.children);
-//                target.parent.children.remove(parentChildIndex);
-                // 如果删除后父节点的关键字数不小于  ceil(M/2)-1
-//                if(target.parent.children.size() >= Math.ceil(M/2.0)) {
-//                    return leftSibling.getRoot();
-//                }else {
-                    return delete(target.parent, parentChildIndex-1, parentChildIndex);
-//                }
             }else {
-                // TODO: 右兄弟
-                return null;
+                // 没有左兄弟和右兄弟合并
+                BTreeNode rightSibling = target.parent.children.get(parentChildIndex+1);
+                // 加上父节点关键字
+                parentValueIndex = parentChildIndex;
+                int downKey = target.parent.values.get(parentValueIndex);
+                rightSibling.values.add(0, downKey);
+                // 加上目标节点的剩余信息
+                rightSibling.values.addAll(0, target.values);
+                target.children.forEach(c -> c.parent=rightSibling);
+                rightSibling.children.addAll(0, target.children);
             }
+            // 递归删除父节点关键字和孩子
+            return delete(target.parent, parentValueIndex, parentChildIndex);
         }
     }
 
@@ -309,7 +305,7 @@ public class BTreeNode {
     }
 
     /*
-     * 清空当前节点
+     * 清空当前节点, 保留父关系
      */
     public void clear() {
         values.clear();

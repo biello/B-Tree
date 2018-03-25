@@ -1,7 +1,5 @@
 import ind.biello.node.BTreeNode;
 
-import java.util.LinkedList;
-import java.util.List;
 
 public class Main {
 
@@ -48,26 +46,33 @@ public class Main {
         node = node.insert(2);
         node = node.insert(13);
         node = node.insert(15);
-//        node.print();
         node = node.insert(25);
         node = node.insert(23);
         node = node.insert(35);
         node = node.insert(24);
         node = node.insert(4);
         node = node.insert(17);
-        node.print();
-        System.out.println("-----------------");
+//        node.print();
+//        System.out.println("-----------------");
         node = node.delete(4);
+//        node.print();
+//        System.out.println("-----------------");
+        node = node.delete(17);
+//        node.print();
+//        System.out.println("-----------------");
+        node = node.delete(15);
         node.print();
         System.out.println("-----------------");
-        node = node.delete(17);
+        node = node.delete(24);
+        node.print();
+        System.out.println("-----------------");
+        node = node.delete(23);
         node.print();
         System.out.println("-----------------");
         node = node.delete(35);
         node.print();
+        System.out.println("-----------------");
 
-//        node = node.delete(13);
-//        node.print();
     }
 
 }
