@@ -1,7 +1,6 @@
 package ind.biello.node;
 
 import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Author:  bielu
@@ -205,8 +204,9 @@ public class BTreeNode {
             int downKey = target.parent.values.get(parentChildIndex-1);
             BTreeNode leftSibling = target.parent.children.get(parentChildIndex-1);
             int upKey = leftSibling.values.remove(leftSibling.values.size()-1);
-            leftSibling.children.remove(leftSibling.children.size()-1);
+            BTreeNode mergeChild = leftSibling.children.remove(leftSibling.children.size()-1);
             target.values.add(0, downKey);
+            target.children.add(0, mergeChild);
             target.parent.values.set(parentChildIndex-1, upKey);
             return target.getRoot();
         }else if(parentChildIndex < target.parent.children.size()-1 &&
@@ -215,8 +215,9 @@ public class BTreeNode {
             int downKey = target.parent.values.get(parentChildIndex);
             BTreeNode rightSibling = target.parent.children.get(parentChildIndex+1);
             int upKey = rightSibling.values.remove(0);
-            rightSibling.children.remove(0);
+            BTreeNode mergeChild = rightSibling.children.remove(0);
             target.values.add(downKey);
+            target.children.add(mergeChild);
             target.parent.values.set(parentChildIndex, upKey);
             return target.getRoot();
         }else {
